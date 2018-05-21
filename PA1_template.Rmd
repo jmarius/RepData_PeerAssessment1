@@ -1,25 +1,99 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
+Activity Monitoring
+===================
 
+1. Code for reading in the dataset and/or processing the data
 
-## Loading and preprocessing the data
+```{r Load Data, echo=TRUE}
+activity <- read.csv(file = "activity.csv", header = TRUE, sep = ",",
+                     na.strings = "NA")
+activity$date <- as.Date(activity$date, "%Y-%m-%d")
+```
 
+2. Histogram of the total number of steps taken each day
+```{r Histogram, echo=TRUE}
+totalsteps <- with(activity, tapply(steps, date, sum, na.rm = TRUE))
+hist(totalsteps, col = "blue",
+     main = "Histogram of the Total Number of Steps taken each day",
+     ylab = "Frequency",
+     xlab = "Steps per Day")
+```
 
+3. Mean and median number of steps taken each day
+```{r Mean and Median results, echo=TRUE}
+mean(totalsteps)
+median(totalsteps)
+```
 
-## What is mean total number of steps taken per day?
+4. Time series plot of the average number of steps taken
+```{r Time Series Plot, echo=TRUE}
+avgstps_intrvl <- with(activity, tapply(steps, interval, mean, na.rm = TRUE))
+plot(rownames(avgstps_intrvl), avgstps_intrvl, type = "l", col = "red",
+     main = "Average Daily Activity Pattern",
+     ylab = "Average across all Days",
+     xlab = "Average number of Steps Taken")
+```
 
+5. The 5-minute interval that, on average, contains the maximum number of steps
+```{r Max Number of Steps, echo=TRUE}
+avgstps_intrvl[which.max(avgstps_intrvl)]
+```
 
+6. Code to describe and show a strategy for imputing missing data
+   Strategy - Fill in missing values by inserting the average steps for each 
+   5-minute interval
 
-## What is the average daily activity pattern?
+Step 1: Create two groups: with NAs and without NAs
+```{r Imputing process 1, echo=TRUE}
+missing <- activity[is.na(activity$steps),]
+complete <- activity[!is.na(activity$steps),]
+```
 
+Step 2: Create a dataframe with the average steps for each interval
+```{r Imputing process 2, echo=TRUE}
+avgstps_intrvl2 <- data.frame(steps = avgstps_intrvl, interval = rownames(avgstps_intrvl))
+```
 
+Step 3: Left join the missing data and avgsteps per interval
+```{r Imputing process 3, echo=TRUE}
+missing_cmplt <- merge(missing, avgstps_intrvl2, by = "interval", all.x = TRUE)
+missing_cmplt2 <- data.frame(steps = as.integer(missing_cmplt$steps.y), 
+                             date = missing_cmplt$date, 
+                             interval = missing_cmplt$interval)
+```
 
-## Imputing missing values
+Step 4: combine datasets
+```{r Imputing process 4, echo=TRUE}
+complete_set <- rbind(complete, missing_cmplt2)
+complete_set <- complete_set[order(complete_set$date, complete_set$interval),]
+complete_set <- complete_set[order(complete_set$date, complete_set$interval),]
+```
 
+7. Histogram of the total number of steps taken each day after missing values are imputed
+```{r Histogram, echo=TRUE}
+complete_sum <- with(complete_set, tapply(steps, date, sum))
 
+hist(complete_sum, col = "orange",
+     main = "Histogram of the Total Number of Steps taken each day",
+     ylab = "Frequency",
+     xlab = "Steps per Day")
 
-## Are there differences in activity patterns between weekdays and weekends?
+mean(complete_sum)
+median(complete_sum)
+```
+
+8. Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
+```{r Panel Plot, echo=TRUE}
+complete_set$week <- ifelse(weekdays(complete_set$date) %in% c("Saturday","Sunday"), "weekend", "weekday")
+
+panel <- as.data.frame(with(complete_set, tapply(steps, list(interval, week), mean)))
+panel$interval <- rownames(panel)
+panel$interval <- as.integer(panel$interval)
+
+library(tidyr)
+panel_long <- gather(data = panel, value = steps, week, weekday:weekend, factor_key = TRUE)
+
+library(ggplot2)
+qplot(x = interval, y = steps, data = panel_long, geom = "line",facets = week ~.,
+      xlab = "Interval", ylab = "Avg Number of Steps",
+      main = "Avg Steps per Interval Based on Type of Day")
+```
