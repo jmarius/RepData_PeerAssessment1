@@ -10,7 +10,7 @@ activity$date <- as.Date(activity$date, "%Y-%m-%d")
 ```
 
 2. Histogram of the total number of steps taken each day
-```{r Histogram, echo=TRUE}
+```{r, echo=TRUE}
 totalsteps <- with(activity, tapply(steps, date, sum, na.rm = TRUE))
 hist(totalsteps, col = "blue",
      main = "Histogram of the Total Number of Steps taken each day",
@@ -69,7 +69,7 @@ complete_set <- complete_set[order(complete_set$date, complete_set$interval),]
 ```
 
 7. Histogram of the total number of steps taken each day after missing values are imputed
-```{r Histogram, echo=TRUE}
+```{r, echo=TRUE}
 complete_sum <- with(complete_set, tapply(steps, date, sum))
 
 hist(complete_sum, col = "orange",
@@ -96,4 +96,10 @@ library(ggplot2)
 qplot(x = interval, y = steps, data = panel_long, geom = "line",facets = week ~.,
       xlab = "Interval", ylab = "Avg Number of Steps",
       main = "Avg Steps per Interval Based on Type of Day")
+```
+9. All of the R code needed to reproduce the results (numbers, plots, etc.) in the report
+```{r Code, echo=True, results="hide"}
+library(readr)
+sourcecode <- readLines("~/Documents/Data Scientist Specialization/Reproducible Research/Week 2/Course Project 1/activity.R")
+sourcecode
 ```
